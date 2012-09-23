@@ -5,9 +5,9 @@
 package goson_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
+	"launchpad.net/goson"
 	"log"
 	"os"
 	"strings"
@@ -24,7 +24,7 @@ func ExampleMarshal() {
 		Name:   "Reds",
 		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
 	}
-	b, err := json.Marshal(group)
+	b, err := goson.Marshal(group)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -34,7 +34,7 @@ func ExampleMarshal() {
 }
 
 func ExampleUnmarshal() {
-	var jsonBlob = []byte(`[
+	var gosonBlob = []byte(`[
 		{"Name": "Platypus", "Order": "Monotremata"},
 		{"Name": "Quoll",    "Order": "Dasyuromorphia"}
 	]`)
@@ -43,7 +43,7 @@ func ExampleUnmarshal() {
 		Order string
 	}
 	var animals []Animal
-	err := json.Unmarshal(jsonBlob, &animals)
+	err := goson.Unmarshal(gosonBlob, &animals)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -54,7 +54,7 @@ func ExampleUnmarshal() {
 
 // This example uses a Decoder to decode a stream of distinct JSON values.
 func ExampleDecoder() {
-	const jsonStream = `
+	const gosonStream = `
 		{"Name": "Ed", "Text": "Knock knock."}
 		{"Name": "Sam", "Text": "Who's there?"}
 		{"Name": "Ed", "Text": "Go fmt."}
@@ -64,7 +64,7 @@ func ExampleDecoder() {
 	type Message struct {
 		Name, Text string
 	}
-	dec := json.NewDecoder(strings.NewReader(jsonStream))
+	dec := goson.NewDecoder(strings.NewReader(gosonStream))
 	for {
 		var m Message
 		if err := dec.Decode(&m); err == io.EOF {
@@ -80,4 +80,34 @@ func ExampleDecoder() {
 	// Ed: Go fmt.
 	// Sam: Go fmt who?
 	// Ed: Go fmt yourself!
+}
+
+func ExampleMarshalIndent() {
+	type ColorGroup struct {
+		ID     int
+		Name   string
+		Colors []string
+	}
+	group := ColorGroup{
+		ID:     1,
+		Name:   "Reds",
+		Colors: []string{"Crimson", "Red", "Ruby", "Maroon", "Dark amber"},
+	}
+	b, err := goson.MarshalIndent(group, "", "\t")
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	os.Stdout.Write(b)
+	// Output:
+	// {
+	// 	ID: 1
+	// 	Name: Reds
+	// 	Colors: [
+	// 		Crimson
+	// 		Red
+	// 		Ruby
+	// 		Maroon
+	// 		"Dark amber"
+	// 	]
+	// }
 }
