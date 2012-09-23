@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"image"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -315,7 +316,7 @@ func TestMarshal(t *testing.T) {
 	}
 	if string(b) != allValueCompact {
 		t.Errorf("Marshal allValueCompact")
-		diff(t, b, []byte(allValueCompact))
+		t.Error(diff(b, []byte(allValueCompact)))
 		return
 	}
 
@@ -325,7 +326,7 @@ func TestMarshal(t *testing.T) {
 	}
 	if string(b) != pallValueCompact {
 		t.Errorf("Marshal pallValueCompact")
-		diff(t, b, []byte(pallValueCompact))
+		t.Error(diff(b, []byte(pallValueCompact)))
 		return
 	}
 }
@@ -414,19 +415,84 @@ func TestUnmarshal(t *testing.T) {
 
 func TestUnmarshalMarshal(t *testing.T) {
 	initBig()
-	var v interface{}
-	if err := Unmarshal(jsonBig, &v); err != nil {
-		t.Fatalf("Unmarshal: %v", err)
-	}
-	b, err := Marshal(v)
+	data, err := findProblem(jsonBigData, func(v interface{}) error {
+		data, err := Marshal(v)
+		if err != nil {
+			return fmt.Errorf("first Marshal: %v", err)
+		}
+		v = nil
+		if err := Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("Unmarshal: %v", err)
+		}
+		b, err := Marshal(v)
+		if err != nil {
+			return fmt.Errorf("Marshal: %v", err)
+		}
+		if !bytes.Equal(data, b) {
+			return fmt.Errorf("Marshal data: %v", diff(b, data))
+		}
+		return nil
+	})
 	if err != nil {
-		t.Fatalf("Marshal: %v", err)
+		t.Errorf("problem found in %#v: %v", data, err)
 	}
-	if bytes.Compare(jsonBig, b) != 0 {
-		t.Errorf("Marshal jsonBig")
-		diff(t, b, jsonBig)
-		return
+}
+
+// findProblem tries to return the smallest subset of the given
+// data for which check returns an error.
+func findProblem(data interface{}, check func(interface{}) error) (culprit interface{}, err error) {
+	err = check(data)
+	if err == nil {
+		return data, nil
 	}
+	left, right := split(data)
+	if left != nil && check(left) != nil {
+		return findProblem(left, check)
+	}
+	if right != nil && check(right) != nil {
+		return findProblem(right, check)
+	}
+	return data, err
+}
+
+func split(v interface{}) (left, right interface{}) {
+	switch v := v.(type) {
+	case []interface{}:
+		switch len(v) {
+		case 0:
+			return nil, nil
+		case 1:
+			return v[0], nil
+		}
+		n := len(v) / 2
+		return v[0:n], v[n:]
+	case map[string]interface{}:
+		switch len(v) {
+		case 0:
+			return nil, nil
+		case 1:
+			for _, v := range v {
+				return v, nil
+			}
+			panic("unreachable")
+		}
+		var keys []string
+		for k := range v {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		n := len(v) / 2
+		m0 := make(map[string]interface{})
+		for _, k := range keys[0:n] {
+			m0[k] = v[k]
+		}
+		m1 := make(map[string]interface{})
+		for _, k := range keys[n:] {
+			m1[k] = v[k]
+		}
+		return m0, m1
+	}
+	return nil, nil
 }
 
 var numberTests = []struct {
@@ -476,7 +542,7 @@ func TestLargeByteSlice(t *testing.T) {
 	}
 	if bytes.Compare(s0, s1) != 0 {
 		t.Errorf("Marshal large byte slice")
-		diff(t, s0, s1)
+		t.Error(diff(s0, s1))
 	}
 }
 
@@ -529,7 +595,7 @@ type wrongStringTest struct {
 
 var wrongStringTests = []wrongStringTest{
 	{`{"result":"x"}`, `json: invalid use of ,string struct tag, trying to unmarshal "x" into string`},
-	{`{"result":"'foo"}`, `json: invalid use of ,string struct tag, trying to unmarshal "foo" into string`},
+	{`{"result":"foo"}`, `json: invalid use of ,string struct tag, trying to unmarshal "foo" into string`},
 	{`{"result":"123"}`, `json: invalid use of ,string struct tag, trying to unmarshal "123" into string`},
 }
 
@@ -542,7 +608,7 @@ func TestErrorMessageFromMisusedString(t *testing.T) {
 		err := NewDecoder(r).Decode(&s)
 		got := fmt.Sprintf("%v", err)
 		if got != tt.err {
-			t.Errorf("%d. got err = %q, want %q", n, got, tt.err)
+			t.Errorf("%d. got err = %q, s %#v, want %q", n, got, s, tt.err)
 		}
 	}
 }

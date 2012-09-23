@@ -15,22 +15,38 @@ import (
 // One of each JSON kind.
 var streamTest = []interface{}{
 	0.1,
-	"hello",
 	nil,
+	"hello",
 	true,
-	false,
 	[]interface{}{"a", "b", "c"},
+	false,
 	map[string]interface{}{"K": "Kelvin", "ß": "long s"},
+	"goodbyefoo",
+	"whee",
 	3.14, // another value to make sure something can follow map
 }
 
-var streamEncoded = `0.1
-"hello"
+var streamOriginal = `0.1
 null
+"hello"
 true
-false
 ["a","b","c"]
+false
 {"ß":"long s","K":"Kelvin"}
+goodbyefoo
+"whee"
+3.14
+`
+
+var streamEncoded = `0.1
+null
+"hello"
+true
+["a","b","c"]
+false
+{"ß":"long s","K":"Kelvin"}
+"goodbyefoo"
+"whee"
 3.14
 `
 
@@ -45,7 +61,7 @@ func TestEncoder(t *testing.T) {
 		}
 		if have, want := buf.String(), nlines(streamEncoded, i); have != want {
 			t.Errorf("encoding %d items: mismatch", i)
-			diff(t, []byte(have), []byte(want))
+			t.Error(diff([]byte(have), []byte(want)))
 			break
 		}
 	}
@@ -55,11 +71,11 @@ func TestDecoder(t *testing.T) {
 	for i := 0; i <= len(streamTest); i++ {
 		// Use stream without newlines as input,
 		// just to stress the decoder even more.
-		// Our test input does not include back-to-back numbers.
-		// Otherwise stripping the newlines would
+		// Our test input does not include back-to-back numbers
+		// or identifiers otherwise stripping the newlines would
 		// merge two adjacent JSON values.
 		var buf bytes.Buffer
-		for _, c := range nlines(streamEncoded, i) {
+		for _, c := range nlines(streamOriginal, i) {
 			if c != '\n' {
 				buf.WriteRune(c)
 			}

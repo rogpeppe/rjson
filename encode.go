@@ -623,8 +623,14 @@ func typeFields(t reflect.Type) []field {
 					if name == "" {
 						name = sf.Name
 					}
-					fields = append(fields, field{name, tagged, index, sf.Type,
-						opts.Contains("omitempty"), opts.Contains("string")})
+					fields = append(fields, field{
+						name:      name,
+						tag:       tagged,
+						index:     index,
+						typ:       sf.Type,
+						omitEmpty: opts.Contains("omitempty"),
+						quoted:    opts.Contains("string"),
+					})
 					if count[f.typ] > 1 {
 						// If there were multiple instances, add a second,
 						// so that the annihilation code will see a duplicate.

@@ -14,6 +14,11 @@ package json
 // before diving into the scanner itself.
 
 import "strconv"
+import (
+	"fmt"
+	"reflect"
+	"runtime"
+)
 
 // checkValid verifies that data is valid JSON-encoded data.
 // scan is passed in for use by checkValid to avoid an allocation.
@@ -96,6 +101,11 @@ type scanner struct {
 
 	// total bytes consumed, updated by decoder.Decode
 	bytes int64
+}
+
+func (s *scanner) String() string {
+	f := runtime.FuncForPC(reflect.ValueOf(s.step).Pointer())
+	return fmt.Sprintf("{step: %s}", f.Name())
 }
 
 // These values are returned by the state transition functions
@@ -203,7 +213,7 @@ func stateBeginValue(s *scanner, c int) int {
 	}
 	switch c {
 	case '{':
-		s.step = stateBeginStringOrEmpty
+		s.step = stateBeginStringOrIdentifierOrEmpty
 		s.pushParseState(parseObjectKey)
 		return scanBeginObject
 	case '[':
@@ -219,25 +229,32 @@ func stateBeginValue(s *scanner, c int) int {
 	case '0': // beginning of 0.123
 		s.step = state0
 		return scanBeginLiteral
-	case 't': // beginning of true
-		s.step = stateT
-		return scanBeginLiteral
-	case 'f': // beginning of false
-		s.step = stateF
-		return scanBeginLiteral
-	case 'n': // beginning of null
-		s.step = stateN
-		return scanBeginLiteral
 	}
-	if '1' <= c && c <= '9' { // beginning of 1234.5
+	switch {
+	case '1' <= c && c <= '9': // beginning of 1234.5
 		s.step = state1
+		return scanBeginLiteral
+	case isIdentifierStart(c):
+		s.step = stateInIdentifier
 		return scanBeginLiteral
 	}
 	return s.error(c, "looking for beginning of value")
 }
 
+// stateBeginIdentifier is the state after the first character of an identifier.
+func stateInIdentifier(s *scanner, c int) int {
+	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_' || c == '-' || '0' <= c && c <= '9' {
+		return scanContinue
+	}
+	return stateEndValue(s, c)
+}
+
+func isIdentifierStart(c int) bool {
+	return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
+}
+
 // stateBeginStringOrEmpty is the state after reading `{`.
-func stateBeginStringOrEmpty(s *scanner, c int) int {
+func stateBeginStringOrIdentifierOrEmpty(s *scanner, c int) int {
 	if c <= ' ' && isSpace(rune(c)) {
 		return scanSkipSpace
 	}
@@ -246,16 +263,20 @@ func stateBeginStringOrEmpty(s *scanner, c int) int {
 		s.parseState[n-1] = parseObjectValue
 		return stateEndValue(s, c)
 	}
-	return stateBeginString(s, c)
+	return stateBeginStringOrIdentifier(s, c)
 }
 
 // stateBeginString is the state after reading `{"key": value,`.
-func stateBeginString(s *scanner, c int) int {
+func stateBeginStringOrIdentifier(s *scanner, c int) int {
 	if c <= ' ' && isSpace(rune(c)) {
 		return scanSkipSpace
 	}
-	if c == '"' {
+	switch {
+	case c == '"':
 		s.step = stateInString
+		return scanBeginLiteral
+	case isIdentifierStart(c):
+		s.step = stateInIdentifier
 		return scanBeginLiteral
 	}
 	return s.error(c, "looking for beginning of object key string")
@@ -287,7 +308,7 @@ func stateEndValue(s *scanner, c int) int {
 	case parseObjectValue:
 		if c == ',' {
 			s.parseState[n-1] = parseObjectKey
-			s.step = stateBeginString
+			s.step = stateBeginStringOrIdentifier
 			return scanObjectValue
 		}
 		if c == '}' {
@@ -483,96 +504,6 @@ func stateE0(s *scanner, c int) int {
 		return scanContinue
 	}
 	return stateEndValue(s, c)
-}
-
-// stateT is the state after reading `t`.
-func stateT(s *scanner, c int) int {
-	if c == 'r' {
-		s.step = stateTr
-		return scanContinue
-	}
-	return s.error(c, "in literal true (expecting 'r')")
-}
-
-// stateTr is the state after reading `tr`.
-func stateTr(s *scanner, c int) int {
-	if c == 'u' {
-		s.step = stateTru
-		return scanContinue
-	}
-	return s.error(c, "in literal true (expecting 'u')")
-}
-
-// stateTru is the state after reading `tru`.
-func stateTru(s *scanner, c int) int {
-	if c == 'e' {
-		s.step = stateEndValue
-		return scanContinue
-	}
-	return s.error(c, "in literal true (expecting 'e')")
-}
-
-// stateF is the state after reading `f`.
-func stateF(s *scanner, c int) int {
-	if c == 'a' {
-		s.step = stateFa
-		return scanContinue
-	}
-	return s.error(c, "in literal false (expecting 'a')")
-}
-
-// stateFa is the state after reading `fa`.
-func stateFa(s *scanner, c int) int {
-	if c == 'l' {
-		s.step = stateFal
-		return scanContinue
-	}
-	return s.error(c, "in literal false (expecting 'l')")
-}
-
-// stateFal is the state after reading `fal`.
-func stateFal(s *scanner, c int) int {
-	if c == 's' {
-		s.step = stateFals
-		return scanContinue
-	}
-	return s.error(c, "in literal false (expecting 's')")
-}
-
-// stateFals is the state after reading `fals`.
-func stateFals(s *scanner, c int) int {
-	if c == 'e' {
-		s.step = stateEndValue
-		return scanContinue
-	}
-	return s.error(c, "in literal false (expecting 'e')")
-}
-
-// stateN is the state after reading `n`.
-func stateN(s *scanner, c int) int {
-	if c == 'u' {
-		s.step = stateNu
-		return scanContinue
-	}
-	return s.error(c, "in literal null (expecting 'u')")
-}
-
-// stateNu is the state after reading `nu`.
-func stateNu(s *scanner, c int) int {
-	if c == 'l' {
-		s.step = stateNul
-		return scanContinue
-	}
-	return s.error(c, "in literal null (expecting 'l')")
-}
-
-// stateNul is the state after reading `nul`.
-func stateNul(s *scanner, c int) int {
-	if c == 'l' {
-		s.step = stateEndValue
-		return scanContinue
-	}
-	return s.error(c, "in literal null (expecting 'l')")
 }
 
 // stateError is the state after reaching a syntax error,

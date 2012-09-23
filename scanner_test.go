@@ -6,6 +6,7 @@ package json
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"math/rand"
 	"reflect"
@@ -94,7 +95,7 @@ func TestCompactBig(t *testing.T) {
 	b := buf.Bytes()
 	if bytes.Compare(b, jsonBig) != 0 {
 		t.Error("Compact(jsonBig) != jsonBig")
-		diff(t, b, jsonBig)
+		t.Error(diff(b, jsonBig))
 		return
 	}
 }
@@ -120,7 +121,7 @@ func TestIndentBig(t *testing.T) {
 	b1 := buf1.Bytes()
 	if bytes.Compare(b1, b) != 0 {
 		t.Error("Indent(Indent(jsonBig)) != Indent(jsonBig)")
-		diff(t, b1, b)
+		t.Error(diff(b1, b))
 		return
 	}
 
@@ -132,7 +133,7 @@ func TestIndentBig(t *testing.T) {
 	b1 = buf1.Bytes()
 	if bytes.Compare(b1, jsonBig) != 0 {
 		t.Error("Compact(Indent(jsonBig)) != jsonBig")
-		diff(t, b1, jsonBig)
+		t.Error(diff(b1, jsonBig))
 		return
 	}
 }
@@ -196,17 +197,19 @@ func BenchmarkSkipValue(b *testing.B) {
 	b.SetBytes(int64(len(jsonBig)))
 }
 
-func diff(t *testing.T, a, b []byte) {
+// diff returns a description of the difference
+// between and b
+func diff(a, b []byte) string {
 	for i := 0; ; i++ {
 		if i >= len(a) || i >= len(b) || a[i] != b[i] {
 			j := i - 10
 			if j < 0 {
 				j = 0
 			}
-			t.Errorf("diverge at %d: «%s» vs «%s»", i, trim(a[j:]), trim(b[j:]))
-			return
+			return fmt.Sprintf("diverge at %d/%d: «%s» vs «%s»", i, len(a), trim(a[j:]), trim(b[j:]))
 		}
 	}
+	return "no difference"
 }
 
 func trim(b []byte) []byte {
@@ -219,6 +222,7 @@ func trim(b []byte) []byte {
 // Generate a random JSON object.
 
 var jsonBig []byte
+var jsonBigData interface{}
 
 const (
 	big   = 10000
@@ -231,10 +235,12 @@ func initBig() {
 		n = small
 	}
 	if len(jsonBig) != n {
-		b, err := Marshal(genValue(n))
+		v := genValue(n)
+		b, err := Marshal(v)
 		if err != nil {
 			panic(err)
 		}
+		jsonBigData = v
 		jsonBig = b
 	}
 }
