@@ -2,12 +2,34 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package json implements encoding and decoding of JSON objects as defined in
-// RFC 4627.
+// Package goson implements an almost-entirely backwardly
+// compatible version of JSON with the aim of making it
+// easier for humans to read and write.
 //
-// See "JSON and Go" for an introduction to this package:
-// http://golang.org/doc/articles/json_and_go.html
-package json
+// The data model is exactly that of JSON's and this package
+// implements all the marshalling and unmarshalling operations
+// supported by the standard library's json package.
+//
+// The three principal differences are:
+//	- Quotes may be omitted for "identifier" strings (see below).
+//	- Commas are automatically inserted when a newline
+//	is encountered after a value.
+//	- Commas are optional at the end of an array or object.
+//
+// The goson encoding is incompatible with JSON's in the
+// following ways:
+//
+//	- It is an error if object key has a newline before the ':' character.
+//	- If using json as a stream, keywords with no intervening white space are
+//	merged into a single identifier. For instance `truenull` parses
+//	as the single identifier with string value "truenull".
+//
+// An "identifier" string matches the following regular expression:
+//	[a-zA-Z][a-zA-Z0-9\-_]*
+// This rule will be relaxed in the future to allow unicode characters,
+// probably following the same rules as Go's identifiers, and probably
+// a few more non-alphabetical characters.
+package goson
 
 import (
 	"bytes"
@@ -23,7 +45,10 @@ import (
 	"unicode/utf8"
 )
 
-// Marshal returns the JSON encoding of v.
+// Marshal returns the JSON encoding of v. Note that despite
+// the fact that this is the goson package, this function
+// does returns JSON. MarshalIndent and Indent can be used
+// to produce goson-specific output.
 //
 // Marshal traverses the value v recursively.
 // If an encountered value implements the Marshaler interface
@@ -162,7 +187,8 @@ func HTMLEscape(dst *bytes.Buffer, src []byte) {
 }
 
 // Marshaler is the interface implemented by objects that
-// can marshal themselves into valid JSON.
+// can marshal themselves into valid JSON (and hence valid
+// goson)
 type Marshaler interface {
 	MarshalJSON() ([]byte, error)
 }

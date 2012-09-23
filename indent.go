@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json
+package goson
 
 import "bytes"
 
-// Compact appends to dst the JSON-encoded src with
+// Compact appends to dst the goson-encoded src with
 // insignificant space characters elided.
 func Compact(dst *bytes.Buffer, src []byte) error {
 	// BUG it does not currently shorten strings
@@ -72,12 +72,14 @@ func newline(dst *bytes.Buffer, prefix, indent string, depth int) {
 	}
 }
 
-// Indent appends to dst an indented form of the JSON-encoded src.
-// Each element in a JSON object or array begins on a new,
+// Indent appends to dst an indented form of the goson-encoded src.
+// Each element in a goson object or array begins on a new,
 // indented line beginning with prefix followed by one or more
 // copies of indent according to the indentation nesting.
 // The data appended to dst has no trailing newline, to make it easier
-// to embed inside other formatted JSON data.
+// to embed inside other formatted goson data.
+// Strings are formatted as identifiers whenever possible;
+// commas are elided.
 func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
 	origLen := dst.Len()
 	var scan scanner

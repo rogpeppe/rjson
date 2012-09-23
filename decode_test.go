@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package json
+package goson
 
 import (
 	"bytes"
@@ -58,7 +58,7 @@ type unmarshaler struct {
 	T bool
 }
 
-func (u *unmarshaler) UnmarshalJSON(b []byte) error {
+func (u *unmarshaler) UnmarshalGOSON(b []byte) error {
 	*u = unmarshaler{true} // All we need to see that UnmarshalJson is called.
 	return nil
 }
