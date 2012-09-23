@@ -395,7 +395,7 @@ func (d *decodeState) array(v reflect.Value) {
 		if op == scanEndArray {
 			break
 		}
-		if op != scanArrayValue {
+		if op != scanComma && op != scanArrayValue {
 			d.error(errPhase("2"))
 		}
 	}
@@ -473,7 +473,7 @@ func (d *decodeState) object(v reflect.Value) {
 		// Read opening " of string key or closing }.
 		op := d.scanWhile(scanSkipSpace)
 		if op == scanEndObject {
-			// closing } - can only happen on first iteration.
+			// closing }
 			break
 		}
 		if op != scanBeginLiteral {
@@ -484,7 +484,7 @@ func (d *decodeState) object(v reflect.Value) {
 		start := d.off - 1
 		op = d.scanWhile(scanContinue)
 		item := d.data[start : d.off-1]
-		key, ok := unquote(item)
+		key, ok := unquotedKey(item)
 		if !ok {
 			d.error(errPhase("4"))
 		}
@@ -564,10 +564,22 @@ func (d *decodeState) object(v reflect.Value) {
 		if op == scanEndObject {
 			break
 		}
-		if op != scanObjectValue {
+		if op != scanComma && op != scanObjectValue {
 			d.error(errPhase("6"))
 		}
 	}
+}
+
+// A map key may be a quoted string or an unquoted identifier.
+func unquotedKey(item []byte) (string, bool) {
+	if item[0] == '"' {
+		return unquote(item)
+	}
+	// quick sanity check.
+	if !isIdentifierStart(int(item[0])) {
+		return "", false
+	}
+	return string(item), true
 }
 
 // literal consumes a literal from d.data[d.off-1:], decoding into the value v.
@@ -795,7 +807,7 @@ func (d *decodeState) arrayInterface() []interface{} {
 		if op == scanEndArray {
 			break
 		}
-		if op != scanArrayValue {
+		if op != scanComma && op != scanArrayValue {
 			d.error(errPhase("10"))
 		}
 	}
@@ -809,7 +821,7 @@ func (d *decodeState) objectInterface() map[string]interface{} {
 		// Read opening " of string key or closing }.
 		op := d.scanWhile(scanSkipSpace)
 		if op == scanEndObject {
-			// closing } - can only happen on first iteration.
+			// closing }
 			break
 		}
 		if op != scanBeginLiteral {
@@ -820,9 +832,9 @@ func (d *decodeState) objectInterface() map[string]interface{} {
 		start := d.off - 1
 		op = d.scanWhile(scanContinue)
 		item := d.data[start : d.off-1]
-		key, ok := unquote(item)
+		key, ok := unquotedKey(item)
 		if !ok {
-			d.error(errPhase("12"))
+			d.error(errPhase(fmt.Sprintf("12 %q", item)))
 		}
 
 		// Read : before value.
@@ -841,7 +853,7 @@ func (d *decodeState) objectInterface() map[string]interface{} {
 		if op == scanEndObject {
 			break
 		}
-		if op != scanObjectValue {
+		if op != scanComma && op != scanObjectValue {
 			d.error(errPhase("14"))
 		}
 	}
@@ -896,7 +908,7 @@ func (d *decodeState) literalInterface() interface{} {
 	if !isIdentifierStart(c) {
 		d.error(errPhase("17"))
 	}
-	return item
+	return string(item)
 }
 
 // getu4 decodes \uXXXX from the beginning of s, returning the hex value,

@@ -27,10 +27,10 @@ type Optionals struct {
 }
 
 var optionalsExpected = `{
- "sr": "",
- "omitempty": 0,
- "slr": null,
- "mr": {}
+ sr: ""
+ omitempty: 0
+ slr: null
+ mr: {}
 }`
 
 func TestOmitEmpty(t *testing.T) {
@@ -55,9 +55,9 @@ type StringTag struct {
 }
 
 var stringTagExpected = `{
- "BoolStr": "true",
- "IntStr": "42",
- "StrStr": "\"xzbit\""
+ BoolStr: "true"
+ IntStr: "42"
+ StrStr: "\"xzbit\""
 }`
 
 func TestStringTag(t *testing.T) {

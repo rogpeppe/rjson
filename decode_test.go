@@ -434,7 +434,7 @@ func TestUnmarshalMarshal(t *testing.T) {
 		return nil
 	})
 	if err != nil {
-		t.Errorf("problem found in %#v: %v", data, err)
+		t.Errorf("problem in %#v: %v", data, err)
 	}
 }
 

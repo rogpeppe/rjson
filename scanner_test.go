@@ -26,21 +26,24 @@ var examples = []example{
 	{`[]`, `[]`},
 	{`{"":2}`, "{\n\t\"\": 2\n}"},
 	{`[3]`, "[\n\t3\n]"},
-	{`[1,2,3]`, "[\n\t1,\n\t2,\n\t3\n]"},
-	{`{"x":1}`, "{\n\t\"x\": 1\n}"},
+	{`[1,2,3]`, "[\n\t1\n\t2\n\t3\n]"},
+	{`{x:1}`, "{\n\tx: 1\n}"},
+	{`{"null":1}`, "{\n\t\"null\": 1\n}"},
+	{`{"true":1}`, "{\n\t\"true\": 1\n}"},
+	{`{"false":1}`, "{\n\t\"false\": 1\n}"},
 	{ex1, ex1i},
 }
 
-var ex1 = `[true,false,null,"x",1,1.5,0,-5e+2]`
+var ex1 = `[true,false,null,x,1,1.5,0,-5e+2]`
 
 var ex1i = `[
-	true,
-	false,
-	null,
-	"x",
-	1,
-	1.5,
-	0,
+	true
+	false
+	null
+	x
+	1
+	1.5
+	0
 	-5e+2
 ]`
 
@@ -66,7 +69,8 @@ func TestCompact(t *testing.T) {
 
 func TestIndent(t *testing.T) {
 	var buf bytes.Buffer
-	for _, tt := range examples {
+	for i, tt := range examples {
+		t.Logf("test %d", i)
 		buf.Reset()
 		if err := Indent(&buf, []byte(tt.indent), "", "\t"); err != nil {
 			t.Errorf("Indent(%#q): %v", tt.indent, err)
@@ -100,41 +104,81 @@ func TestCompactBig(t *testing.T) {
 	}
 }
 
+func checkUnmarshalledEquality(data []byte, v interface{}) error {
+	// Should marshal back to original.
+	var uv interface{}
+	if err := Unmarshal(data, &uv); err != nil {
+		return fmt.Errorf("unmarshal: %v", err)
+	}
+	if !reflect.DeepEqual(uv, v) {
+		return fmt.Errorf("not equal to original when unmarshalled")
+	}
+	return nil
+}
+
 func TestIndentBig(t *testing.T) {
 	initBig()
-	var buf bytes.Buffer
-	if err := Indent(&buf, jsonBig, "", "\t"); err != nil {
-		t.Fatalf("Indent1: %v", err)
-	}
-	b := buf.Bytes()
-	if len(b) == len(jsonBig) {
-		// jsonBig is compact (no unnecessary spaces);
-		// indenting should make it bigger
-		t.Fatalf("Indent(jsonBig) did not get bigger")
-	}
 
-	// should be idempotent
-	var buf1 bytes.Buffer
-	if err := Indent(&buf1, b, "", "\t"); err != nil {
-		t.Fatalf("Indent2: %v", err)
-	}
-	b1 := buf1.Bytes()
-	if bytes.Compare(b1, b) != 0 {
-		t.Error("Indent(Indent(jsonBig)) != Indent(jsonBig)")
-		t.Error(diff(b1, b))
-		return
-	}
+	data, err := findProblem(jsonBigData, func(v interface{}) error {
+		data, err := Marshal(v)
+		if err != nil {
+			return fmt.Errorf("Marshal1: %v", err)
+		}
+		var buf1 bytes.Buffer
+		if err := Compact(&buf1, data); err != nil {
+			return fmt.Errorf("Compact1: %v", err)
+		}
+		b_compact := buf1.Bytes()
+		if err := checkUnmarshalledEquality(b_compact, v); err != nil {
+			return fmt.Errorf("Compact(data): %v", err)
+		}
 
-	// should get back to original
-	buf1.Reset()
-	if err := Compact(&buf1, b); err != nil {
-		t.Fatalf("Compact: %v", err)
-	}
-	b1 = buf1.Bytes()
-	if bytes.Compare(b1, jsonBig) != 0 {
-		t.Error("Compact(Indent(jsonBig)) != jsonBig")
-		t.Error(diff(b1, jsonBig))
-		return
+		// Compact should be idempotent
+		var buf bytes.Buffer
+		if err := Compact(&buf, b_compact); err != nil {
+			return fmt.Errorf("Compact2: %v", err)
+		}
+		if !bytes.Equal(buf.Bytes(), b_compact) {
+			return fmt.Errorf("Compact(Compact(data)) != Compact(data): %v", diff(buf.Bytes(), b_compact))
+		}
+		buf.Reset()
+
+		var buf2 bytes.Buffer
+		if err := Indent(&buf2, data, "", "\t"); err != nil {
+			return fmt.Errorf("Indent1: %v", err)
+		}
+		b_indent := buf2.Bytes()
+		if len(b_indent) <= len(data) && v == jsonBigData {
+			// jsonBig is compact (no unnecessary spaces);
+			// indenting should make it bigger, at the top
+			// level at least.
+			return fmt.Errorf("Indent(data) did not get bigger")
+		}
+		if err := checkUnmarshalledEquality(b_indent, v); err != nil {
+			return fmt.Errorf("Indent(data): %v", err)
+		}
+		// Indent should be idempotent
+		buf.Reset()
+		if err := Indent(&buf, b_indent, "", "\t"); err != nil {
+			return fmt.Errorf("Indent2: %v", err)
+		}
+		if !bytes.Equal(buf.Bytes(), b_indent) {
+			return fmt.Errorf("Indent(Indent(data)) != Indent(data): %v", diff(buf.Bytes(), b_indent))
+		}
+
+		buf.Reset()
+		if err := Indent(&buf, b_compact, "", "\t"); err != nil {
+			return fmt.Errorf("Indent3: %v", err)
+		}
+		if !bytes.Equal(buf.Bytes(), b_indent) {
+			return fmt.Errorf("Indent(Compact(data)) != Indent(data): %v", diff(buf.Bytes(), b_indent))
+		}
+		// N.B. compact(indent(jsonBig)) != jsonBig because indent
+		// removes unnecessary quotes, but compact does not, currently.
+		return nil
+	})
+	if err != nil {
+		t.Errorf("problem in %#v: %v", data, err)
 	}
 }
 

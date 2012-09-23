@@ -126,6 +126,7 @@ const (
 	scanBeginArray          // begin array
 	scanArrayValue          // just finished array value
 	scanEndArray            // end array (implies scanArrayValue if possible)
+	scanComma               // comma - can skip if last in object or array
 	scanSkipSpace           // space byte; can skip; known to be last "continue" result
 
 	// Stop.
@@ -192,10 +193,15 @@ func (s *scanner) popParseState() {
 }
 
 func isSpace(c rune) bool {
-	return c == ' ' || c == '\t' || c == '\r' || c == '\n'
+	return isSpaceNotNl(c) || c == '\n'
 }
 
-// stateBeginValueOrEmpty is the state after reading `[`.
+func isSpaceNotNl(c rune) bool {
+	return c == ' ' || c == '\t' || c == '\r'
+}
+
+// stateBeginValueOrEmpty is the state after reading `[`
+// or within a '[' after reading a ','.
 func stateBeginValueOrEmpty(s *scanner, c int) int {
 	if c <= ' ' && isSpace(rune(c)) {
 		return scanSkipSpace
@@ -243,17 +249,22 @@ func stateBeginValue(s *scanner, c int) int {
 
 // stateBeginIdentifier is the state after the first character of an identifier.
 func stateInIdentifier(s *scanner, c int) int {
-	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '_' || c == '-' || '0' <= c && c <= '9' {
+	if isIdentifierInside(c) {
 		return scanContinue
 	}
 	return stateEndValue(s, c)
+}
+
+func isIdentifierInside(c int) bool {
+	return isIdentifierStart(c) || c == '_' || c == '-' || '0' <= c && c <= '9'
 }
 
 func isIdentifierStart(c int) bool {
 	return 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
 }
 
-// stateBeginStringOrEmpty is the state after reading `{`.
+// stateBeginStringOrEmpty is the state after reading `{`
+// or within a '{' after reading a ','.
 func stateBeginStringOrIdentifierOrEmpty(s *scanner, c int) int {
 	if c <= ' ' && isSpace(rune(c)) {
 		return scanSkipSpace
@@ -292,7 +303,7 @@ func stateEndValue(s *scanner, c int) int {
 		s.endTop = true
 		return stateEndTop(s, c)
 	}
-	if c <= ' ' && isSpace(rune(c)) {
+	if c <= ' ' && isSpaceNotNl(rune(c)) {
 		s.step = stateEndValue
 		return scanSkipSpace
 	}
@@ -306,10 +317,10 @@ func stateEndValue(s *scanner, c int) int {
 		}
 		return s.error(c, "after object key")
 	case parseObjectValue:
-		if c == ',' {
+		if c == ',' || c == '\n' {
 			s.parseState[n-1] = parseObjectKey
-			s.step = stateBeginStringOrIdentifier
-			return scanObjectValue
+			s.step = stateBeginStringOrIdentifierOrEmpty
+			return scanComma
 		}
 		if c == '}' {
 			s.popParseState()
@@ -317,9 +328,9 @@ func stateEndValue(s *scanner, c int) int {
 		}
 		return s.error(c, "after object key:value pair")
 	case parseArrayValue:
-		if c == ',' {
-			s.step = stateBeginValue
-			return scanArrayValue
+		if c == ',' || c == '\n' {
+			s.step = stateBeginValueOrEmpty
+			return scanComma
 		}
 		if c == ']' {
 			s.popParseState()
