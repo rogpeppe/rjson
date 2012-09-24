@@ -16,7 +16,7 @@ import (
 // Tests of simple examples.
 
 type example struct {
-	orig string
+	orig    string
 	compact string
 	indent  string
 }
@@ -58,7 +58,7 @@ func TestCompactIndent(t *testing.T) {
 		if err := Compact(&buf, []byte(tt.orig)); err != nil {
 			t.Errorf("Compact(%#q): %v", tt.orig, err)
 		}
-		if s := buf.String();  s != tt.compact {
+		if s := buf.String(); s != tt.compact {
 			t.Errorf("Compact(%#q) = %#q, want %#q", tt.orig, s, tt.compact)
 		}
 
