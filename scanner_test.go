@@ -29,22 +29,22 @@ var examples = []example{
 	{`[3]`, `[3]`, "[\n\t3\n]"},
 	{`[1,2,3]`, `[1,2,3]`, "[\n\t1\n\t2\n\t3\n]"},
 	{`{x:1}`, `{x:1}`, "{\n\tx: 1\n}"},
-	{`{"null":1}`, `{"null":1}`, "{\n\t\"null\": 1\n}"},
-	{`{"true":1}`, `{"true":1}`, "{\n\t\"true\": 1\n}"},
-	{`{"false":1}`, `{"false":1}`, "{\n\t\"false\": 1\n}"},
+	{`{"null":1}`, `{"null":1}`, "{\n\tnull: 1\n}"},
+	{`{"true":1}`, `{"true":1}`, "{\n\ttrue: 1\n}"},
+	{`{"false":1}`, `{"false":1}`, "{\n\tfalse: 1\n}"},
 	{ex1, ex1, ex1i},
 	// goson-specific examples:
-	{"{truenull\n :\n \"falsetrue\",\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: falsetrue\n}"},
-	{"{\n\ttruenull: falsetrue\n}", `{truenull:falsetrue}`, "{\n\ttruenull: falsetrue\n}"},
+	{"{truenull\n :\n \"falsetrue\",\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: \"falsetrue\"\n}"},
+	{"{\n\ttruenull: \"falsetrue\"\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: \"falsetrue\"\n}"},
 }
 
-var ex1 = `[true,false,null,x,1,1.5,0,-5e+2]`
+var ex1 = `[true,false,null,"x",1,1.5,0,-5e+2]`
 
 var ex1i = `[
 	true
 	false
 	null
-	x
+	"x"
 	1
 	1.5
 	0

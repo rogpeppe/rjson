@@ -114,12 +114,9 @@ func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
 				continue
 			}
 			if c == '"' {
-				// End of string - we've found a potentially identifier
+				// End of key string - we've found a potential identifier
 				ident := src[startString+1 : i]
-				if len(ident) > 0 &&
-					!bytes.Equal(ident, trueIdent) &&
-					!bytes.Equal(ident, falseIdent) &&
-					!bytes.Equal(ident, nullIdent) {
+				if len(ident) > 0 {
 					// valid identifier - write without quotes.
 					dst.Write(ident)
 				} else {
@@ -178,8 +175,9 @@ func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
 				newline(dst, prefix, indent, depth)
 				wasComma = false
 			}
-			if c == '"' {
-				// delay writing a string until we decide whether it
+			n := len(scan.parseState)
+			if n > 0 && scan.parseState[n-1] == parseObjectKey && c == '"' {
+				// delay writing a quoted object key until we decide whether it
 				// can be a valid identifier.
 				startString = i
 			} else {

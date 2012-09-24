@@ -101,12 +101,12 @@ func ExampleMarshalIndent() {
 	// Output:
 	// {
 	// 	ID: 1
-	// 	Name: Reds
+	// 	Name: "Reds"
 	// 	Colors: [
-	// 		Crimson
-	// 		Red
-	// 		Ruby
-	// 		Maroon
+	// 		"Crimson"
+	// 		"Red"
+	// 		"Ruby"
+	// 		"Maroon"
 	// 		"Dark amber"
 	// 	]
 	// }
