@@ -7,7 +7,10 @@ package goson
 import "bytes"
 
 // Compact appends to dst the goson-encoded src with
-// insignificant space characters elided.
+// insignificant space characters elided. Note that
+// calling Compact on the result of Indent can be
+// smaller still, as Compact does not current omit
+// quotes from strings that can be represented as identifiers.
 func Compact(dst *bytes.Buffer, src []byte) error {
 	// BUG it does not currently shorten strings
 	// that can be identifiers.

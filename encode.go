@@ -2,33 +2,35 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package goson implements an almost-entirely backwardly
-// compatible version of JSON with the aim of making it
-// easier for humans to read and write.
+// Package goson implements an almost-entirely backwardly compatible
+// version of JSON with the aim of making it easier for humans to read
+// and write.
 //
-// The data model is exactly that of JSON's and this package
-// implements all the marshalling and unmarshalling operations
-// supported by the standard library's json package.
+// The data model is exactly that of JSON's and this package implements
+// all the marshalling and unmarshalling operations supported by the
+// standard library's json package.
 //
 // The three principal differences are:
 //	- Quotes may be omitted for "identifier" strings (see below).
 //	- Commas are automatically inserted when a newline
-//	is encountered after a value.
+//	is encountered after a value (but not an object key).
 //	- Commas are optional at the end of an array or object.
 //
-// The goson encoding is incompatible with JSON's in the
-// following ways:
-//
-//	- It is an error if object key has a newline before the ':' character.
-//	- If using json as a stream, keywords with no intervening white space are
-//	merged into a single identifier. For instance `truenull` parses
-//	as the single identifier with string value "truenull".
-//
-// An "identifier" string matches the following regular expression:
+// An identifier is a string that is not any of the keywords "true", "false"
+// or "null" that also matches the following regular expression:
 //	[a-zA-Z][a-zA-Z0-9\-_]*
 // This rule will be relaxed in the future to allow unicode characters,
-// probably following the same rules as Go's identifiers, and probably
-// a few more non-alphabetical characters.
+// probably following the same rules as Go's identifiers, and probably a
+// few more non-alphabetical characters.
+//
+// Note: the goson encoding is incompatible with JSON's in the following
+// way only: when parsing a stream of values, keywords with no intervening
+// white space are merged into a single identifier.  For instance if
+// goson encounters `truenull`, it will parse it as a single identifier
+// with string value "truenull", whereas JSON will return first "true"
+// and then "null".  This circumstance is likely to be extremely rare,
+// as JSON values are usally parsed a singletons, and streams of JSON
+// values require intervening white space in all but the above case.
 package goson
 
 import (

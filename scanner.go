@@ -303,13 +303,14 @@ func stateEndValue(s *scanner, c int) int {
 		s.endTop = true
 		return stateEndTop(s, c)
 	}
-	if c <= ' ' && isSpaceNotNl(rune(c)) {
-		s.step = stateEndValue
-		return scanSkipSpace
-	}
 	ps := s.parseState[n-1]
 	switch ps {
 	case parseObjectKey:
+		// N.B. a newline after an object key does not
+		// turn into a comma.
+		if c <= ' ' && isSpace(rune(c)) {
+			return scanSkipSpace
+		}
 		if c == ':' {
 			s.parseState[n-1] = parseObjectValue
 			s.step = stateBeginValue
@@ -317,6 +318,9 @@ func stateEndValue(s *scanner, c int) int {
 		}
 		return s.error(c, "after object key")
 	case parseObjectValue:
+		if c <= ' ' && isSpaceNotNl(rune(c)) {
+			return scanSkipSpace
+		}
 		if c == ',' || c == '\n' {
 			s.parseState[n-1] = parseObjectKey
 			s.step = stateBeginStringOrIdentifierOrEmpty
@@ -328,6 +332,9 @@ func stateEndValue(s *scanner, c int) int {
 		}
 		return s.error(c, "after object key:value pair")
 	case parseArrayValue:
+		if c <= ' ' && isSpaceNotNl(rune(c)) {
+			return scanSkipSpace
+		}
 		if c == ',' || c == '\n' {
 			s.step = stateBeginValueOrEmpty
 			return scanComma
