@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package goson implements a backwardly compatible
+// Package rjson implements a backwardly compatible
 // version of JSON with the aim of making it easier for humans to read
 // and write.
 //
@@ -11,27 +11,18 @@
 // standard library's json package.
 //
 // The three principal differences are:
-//	- Quotes may be omitted for "identifier" strings (see below).
+//	- Quotes may be omitted for some object key values (see below).
 //	- Commas are automatically inserted when a newline
 //	is encountered after a value (but not an object key).
 //	- Commas are optional at the end of an array or object.
 //
-// An identifier is a string that is not any of the keywords "true", "false"
-// or "null" that also matches the following regular expression:
+// The quotes around an object key may be omitted if the
+// key matches the following regular expression:
 //	[a-zA-Z][a-zA-Z0-9\-_]*
 // This rule will be relaxed in the future to allow unicode characters,
 // probably following the same rules as Go's identifiers, and probably a
 // few more non-alphabetical characters.
-//
-// Note: the goson encoding is incompatible with JSON's in the following
-// way only: when parsing a stream of values, keywords with no intervening
-// white space are merged into a single identifier.  For instance if
-// goson encounters `truenull`, it will parse it as a single identifier
-// with string value "truenull", whereas JSON will return first "true"
-// and then "null".  This circumstance is likely to be extremely rare,
-// as JSON values are usally parsed a singletons, and streams of JSON
-// values require intervening white space in all but the above case.
-package goson
+package rjson
 
 import (
 	"bytes"
@@ -48,9 +39,9 @@ import (
 )
 
 // Marshal returns the JSON encoding of v. Note that despite
-// the fact that this is the goson package, this function
+// the fact that this is the rjson package, this function
 // does returns JSON. MarshalIndent and Indent can be used
-// to produce goson-specific output.
+// to produce rjson-specific output.
 //
 // Marshal traverses the value v recursively.
 // If an encountered value implements the Marshaler interface
@@ -190,7 +181,7 @@ func HTMLEscape(dst *bytes.Buffer, src []byte) {
 
 // Marshaler is the interface implemented by objects that
 // can marshal themselves into valid JSON (and hence valid
-// goson)
+// rjson)
 type Marshaler interface {
 	MarshalJSON() ([]byte, error)
 }

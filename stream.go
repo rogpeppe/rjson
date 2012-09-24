@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package goson
+package rjson
 
 import (
 	"errors"
 	"io"
 )
 
-// A Decoder reads and decodes goson objects from an input stream.
+// A Decoder reads and decodes rjson objects from an input stream.
 type Decoder struct {
 	r    io.Reader
 	buf  []byte
@@ -21,7 +21,7 @@ type Decoder struct {
 // NewDecoder returns a new decoder that reads from r.
 //
 // The decoder introduces its own buffering and may
-// read data from r beyond the goson values requested.
+// read data from r beyond the rjson values requested.
 func NewDecoder(r io.Reader) *Decoder {
 	return &Decoder{r: r}
 }
@@ -30,11 +30,11 @@ func NewDecoder(r io.Reader) *Decoder {
 // Number instead of as a float64.
 func (dec *Decoder) UseNumber() { dec.d.useNumber = true }
 
-// Decode reads the next goson-encoded value from its
+// Decode reads the next rjson-encoded value from its
 // input and stores it in the value pointed to by v.
 //
 // See the documentation for Unmarshal for details about
-// the conversion of goson into a Go value.
+// the conversion of rjson into a Go value.
 func (dec *Decoder) Decode(v interface{}) error {
 	if dec.err != nil {
 		return dec.err
@@ -58,7 +58,7 @@ func (dec *Decoder) Decode(v interface{}) error {
 	return err
 }
 
-// readValue reads a goson value into dec.buf.
+// readValue reads a rjson value into dec.buf.
 // It returns the length of the encoding.
 func (dec *Decoder) readValue() (int, error) {
 	dec.scan.reset()
@@ -142,7 +142,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Encode writes the JSON encoding of v to the connection.
-// Note that this does use the JSON encoding, not goson.
+// Note that this does use the JSON encoding, not rjson.
 //
 // See the documentation for Marshal for details about the
 // conversion of Go values to JSON.
@@ -180,10 +180,10 @@ func (m *RawMessage) MarshalJSON() ([]byte, error) {
 	return *m, nil
 }
 
-// UnmarshalGOSON sets *m to a copy of data.
-func (m *RawMessage) UnmarshalGOSON(data []byte) error {
+// UnmarshalRJSON sets *m to a copy of data.
+func (m *RawMessage) UnmarshalRJSON(data []byte) error {
 	if m == nil {
-		return errors.New("json.RawMessage: UnmarshalGOSON on nil pointer")
+		return errors.New("json.RawMessage: UnmarshalRJSON on nil pointer")
 	}
 	*m = append((*m)[0:0], data...)
 	return nil

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package goson
+package rjson
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ var examples = []example{
 	{`{"true":1}`, `{"true":1}`, "{\n\ttrue: 1\n}"},
 	{`{"false":1}`, `{"false":1}`, "{\n\tfalse: 1\n}"},
 	{ex1, ex1, ex1i},
-	// goson-specific examples:
+	// rjson-specific examples:
 	{"{truenull\n :\n \"falsetrue\",\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: \"falsetrue\"\n}"},
 	{"{\n\ttruenull: \"falsetrue\"\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: \"falsetrue\"\n}"},
 }

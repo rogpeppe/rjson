@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package goson
+package rjson
 
 import "bytes"
 
-// Compact appends to dst the goson-encoded src with
+// Compact appends to dst the rjson-encoded src with
 // insignificant space characters elided. Note that
 // calling Compact on the result of Indent can be
 // smaller still, as Compact does not current omit
@@ -75,12 +75,12 @@ func newline(dst *bytes.Buffer, prefix, indent string, depth int) {
 	}
 }
 
-// Indent appends to dst an indented form of the goson-encoded src.
-// Each element in a goson object or array begins on a new,
+// Indent appends to dst an indented form of the rjson-encoded src.
+// Each element in a rjson object or array begins on a new,
 // indented line beginning with prefix followed by one or more
 // copies of indent according to the indentation nesting.
 // The data appended to dst has no trailing newline, to make it easier
-// to embed inside other formatted goson data.
+// to embed inside other formatted rjson data.
 // Strings are formatted as identifiers whenever possible;
 // commas are elided.
 func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {

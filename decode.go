@@ -5,7 +5,7 @@
 // Represents JSON data structure using native Go types: booleans, floats,
 // strings, arrays, and maps.
 
-package goson
+package rjson
 
 import (
 	"encoding/base64"
@@ -18,15 +18,15 @@ import (
 	"unicode/utf8"
 )
 
-// Unmarshal parses the JSON- or goson-encoded data and stores the result
+// Unmarshal parses the JSON- or rjson-encoded data and stores the result
 // in the value pointed to by v. As the data models are the same, "JSON"
-// is used to refer to both JSON and goson.
+// is used to refer to both JSON and rjson.
 //
 // Unmarshal uses the inverse of the encodings that
 // Marshal uses, allocating maps, slices, and pointers as necessary,
 // with the following additional rules:
 //
-// To unmarshal goson into a pointer, Unmarshal first handles the case of
+// To unmarshal rjson into a pointer, Unmarshal first handles the case of
 // the JSON being the JSON literal null.  In that case, Unmarshal sets
 // the pointer to nil.  Otherwise, Unmarshal unmarshals the JSON into
 // the value pointed at by the pointer.  If the pointer is nil, Unmarshal
@@ -65,14 +65,14 @@ func Unmarshal(data []byte, v interface{}) error {
 }
 
 // Unmarshaler is the interface implemented by objects
-// that can unmarshal a goson description of themselves.
-// The input can be assumed to be a valid goson object
-// encoding.  UnmarshalGOSON must copy the goson data
+// that can unmarshal a rjson description of themselves.
+// The input can be assumed to be a valid rjson object
+// encoding.  UnmarshalRJSON must copy the rjson data
 // if it wishes to retain the data after returning.
 // Note: I plan to honour UnmarshalJSON methods
 // in the future.
 type Unmarshaler interface {
-	UnmarshalGOSON([]byte) error
+	UnmarshalRJSON([]byte) error
 }
 
 // An UnmarshalTypeError describes a JSON value that was
@@ -330,7 +330,7 @@ func (d *decodeState) array(v reflect.Value) {
 	unmarshaler, pv := d.indirect(v, false)
 	if unmarshaler != nil {
 		d.off--
-		err := unmarshaler.UnmarshalGOSON(d.next())
+		err := unmarshaler.UnmarshalRJSON(d.next())
 		if err != nil {
 			d.error(err)
 		}
@@ -425,7 +425,7 @@ func (d *decodeState) object(v reflect.Value) {
 	unmarshaler, pv := d.indirect(v, false)
 	if unmarshaler != nil {
 		d.off--
-		err := unmarshaler.UnmarshalGOSON(d.next())
+		err := unmarshaler.UnmarshalRJSON(d.next())
 		if err != nil {
 			d.error(err)
 		}
@@ -629,7 +629,7 @@ func (d *decodeState) literalStore(item []byte, v reflect.Value, fromQuoted bool
 	wantptr := item[0] == 'n' // null
 	unmarshaler, pv := d.indirect(v, wantptr)
 	if unmarshaler != nil {
-		err := unmarshaler.UnmarshalGOSON(item)
+		err := unmarshaler.UnmarshalRJSON(item)
 		if err != nil {
 			d.error(err)
 		}

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package goson_test
+package rjson_test
 
 import (
 	"fmt"
 	"io"
-	"launchpad.net/goson"
+	"launchpad.net/rjson"
 	"log"
 	"os"
 	"strings"
@@ -24,7 +24,7 @@ func ExampleMarshal() {
 		Name:   "Reds",
 		Colors: []string{"Crimson", "Red", "Ruby", "Maroon"},
 	}
-	b, err := goson.Marshal(group)
+	b, err := rjson.Marshal(group)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -34,7 +34,7 @@ func ExampleMarshal() {
 }
 
 func ExampleUnmarshal() {
-	var gosonBlob = []byte(`[
+	var rjsonBlob = []byte(`[
 		{"Name": "Platypus", "Order": "Monotremata"},
 		{"Name": "Quoll",    "Order": "Dasyuromorphia"}
 	]`)
@@ -43,7 +43,7 @@ func ExampleUnmarshal() {
 		Order string
 	}
 	var animals []Animal
-	err := goson.Unmarshal(gosonBlob, &animals)
+	err := rjson.Unmarshal(rjsonBlob, &animals)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -54,7 +54,7 @@ func ExampleUnmarshal() {
 
 // This example uses a Decoder to decode a stream of distinct JSON values.
 func ExampleDecoder() {
-	const gosonStream = `
+	const rjsonStream = `
 		{"Name": "Ed", "Text": "Knock knock."}
 		{"Name": "Sam", "Text": "Who's there?"}
 		{"Name": "Ed", "Text": "Go fmt."}
@@ -64,7 +64,7 @@ func ExampleDecoder() {
 	type Message struct {
 		Name, Text string
 	}
-	dec := goson.NewDecoder(strings.NewReader(gosonStream))
+	dec := rjson.NewDecoder(strings.NewReader(rjsonStream))
 	for {
 		var m Message
 		if err := dec.Decode(&m); err == io.EOF {
@@ -93,7 +93,7 @@ func ExampleMarshalIndent() {
 		Name:   "Reds",
 		Colors: []string{"Crimson", "Red", "Ruby", "Maroon", "Dark amber"},
 	}
-	b, err := goson.MarshalIndent(group, "", "\t")
+	b, err := rjson.MarshalIndent(group, "", "\t")
 	if err != nil {
 		fmt.Println("error:", err)
 	}
