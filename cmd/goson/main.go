@@ -1,3 +1,8 @@
+// The goson command reads goson or JSON from its standard input and
+// writes goson (or JSON if the "-j" flag is given) to its standard output.
+// The "-indent" flag specifies an indent string; if this is empty,
+// a compact output will be used; otherwise the result will be
+// pretty-printed.
 package main
 
 import (
