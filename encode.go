@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package goson implements an almost-entirely backwardly compatible
+// Package goson implements a backwardly compatible
 // version of JSON with the aim of making it easier for humans to read
 // and write.
 //

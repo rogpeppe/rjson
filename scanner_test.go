@@ -16,22 +16,26 @@ import (
 // Tests of simple examples.
 
 type example struct {
+	orig string
 	compact string
 	indent  string
 }
 
 var examples = []example{
-	{`1`, `1`},
-	{`{}`, `{}`},
-	{`[]`, `[]`},
-	{`{"":2}`, "{\n\t\"\": 2\n}"},
-	{`[3]`, "[\n\t3\n]"},
-	{`[1,2,3]`, "[\n\t1\n\t2\n\t3\n]"},
-	{`{x:1}`, "{\n\tx: 1\n}"},
-	{`{"null":1}`, "{\n\t\"null\": 1\n}"},
-	{`{"true":1}`, "{\n\t\"true\": 1\n}"},
-	{`{"false":1}`, "{\n\t\"false\": 1\n}"},
-	{ex1, ex1i},
+	{`1`, `1`, `1`},
+	{`{}`, `{}`, `{}`},
+	{`[]`, `[]`, `[]`},
+	{`{"":2}`, `{"":2}`, "{\n\t\"\": 2\n}"},
+	{`[3]`, `[3]`, "[\n\t3\n]"},
+	{`[1,2,3]`, `[1,2,3]`, "[\n\t1\n\t2\n\t3\n]"},
+	{`{x:1}`, `{x:1}`, "{\n\tx: 1\n}"},
+	{`{"null":1}`, `{"null":1}`, "{\n\t\"null\": 1\n}"},
+	{`{"true":1}`, `{"true":1}`, "{\n\t\"true\": 1\n}"},
+	{`{"false":1}`, `{"false":1}`, "{\n\t\"false\": 1\n}"},
+	{ex1, ex1, ex1i},
+	// goson-specific examples:
+	{"{truenull\n :\n \"falsetrue\",\n}", `{truenull:"falsetrue"}`, "{\n\ttruenull: falsetrue\n}"},
+	{"{\n\ttruenull: falsetrue\n}", `{truenull:falsetrue}`, "{\n\ttruenull: falsetrue\n}"},
 }
 
 var ex1 = `[true,false,null,x,1,1.5,0,-5e+2]`
@@ -47,43 +51,23 @@ var ex1i = `[
 	-5e+2
 ]`
 
-func TestCompact(t *testing.T) {
+func TestCompactIndent(t *testing.T) {
 	var buf bytes.Buffer
 	for _, tt := range examples {
 		buf.Reset()
-		if err := Compact(&buf, []byte(tt.compact)); err != nil {
-			t.Errorf("Compact(%#q): %v", tt.compact, err)
-		} else if s := buf.String(); s != tt.compact {
-			t.Errorf("Compact(%#q) = %#q, want original", tt.compact, s)
+		if err := Compact(&buf, []byte(tt.orig)); err != nil {
+			t.Errorf("Compact(%#q): %v", tt.orig, err)
+		}
+		if s := buf.String();  s != tt.compact {
+			t.Errorf("Compact(%#q) = %#q, want %#q", tt.orig, s, tt.compact)
 		}
 
 		buf.Reset()
-		if err := Compact(&buf, []byte(tt.indent)); err != nil {
-			t.Errorf("Compact(%#q): %v", tt.indent, err)
-			continue
-		} else if s := buf.String(); s != tt.compact {
-			t.Errorf("Compact(%#q) = %#q, want %#q", tt.indent, s, tt.compact)
+		if err := Indent(&buf, []byte(tt.orig), "", "\t"); err != nil {
+			t.Errorf("Indent(%#q): %v", tt.orig, err)
 		}
-	}
-}
-
-func TestIndent(t *testing.T) {
-	var buf bytes.Buffer
-	for i, tt := range examples {
-		t.Logf("test %d", i)
-		buf.Reset()
-		if err := Indent(&buf, []byte(tt.indent), "", "\t"); err != nil {
-			t.Errorf("Indent(%#q): %v", tt.indent, err)
-		} else if s := buf.String(); s != tt.indent {
-			t.Errorf("Indent(%#q) = %#q, want original", tt.indent, s)
-		}
-
-		buf.Reset()
-		if err := Indent(&buf, []byte(tt.compact), "", "\t"); err != nil {
-			t.Errorf("Indent(%#q): %v", tt.compact, err)
-			continue
-		} else if s := buf.String(); s != tt.indent {
-			t.Errorf("Indent(%#q) = %#q, want %#q", tt.compact, s, tt.indent)
+		if s := buf.String(); s != tt.indent {
+			t.Errorf("Indent(%#q) = %#q, want %#q", tt.orig, s, tt.indent)
 		}
 	}
 }
