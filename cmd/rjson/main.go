@@ -56,6 +56,7 @@ func main() {
 		}
 	}
 	d := rjson.NewDecoder(os.Stdin)
+	d.UseNumber()
 	w := bufio.NewWriter(os.Stdout)
 
 	err := stream(w, d, marshal)
