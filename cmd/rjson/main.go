@@ -12,7 +12,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"launchpad.net/rjson"
+	"github.com/rogpeppe/rjson"
 	"os"
 )
 

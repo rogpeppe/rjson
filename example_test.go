@@ -7,7 +7,7 @@ package rjson_test
 import (
 	"fmt"
 	"io"
-	"launchpad.net/rjson"
+	"github.com/rogpeppe/rjson"
 	"log"
 	"os"
 	"strings"
