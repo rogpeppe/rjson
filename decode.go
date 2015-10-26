@@ -159,6 +159,13 @@ func (n Number) Int64() (int64, error) {
 	return strconv.ParseInt(string(n), 10, 64)
 }
 
+func (n Number) MarshalJSON() ([]byte, error) {
+	if len(n) == 0 {
+		return []byte("0"), nil
+	}
+	return []byte(n), nil
+}
+
 // decodeState represents the state while decoding a JSON value.
 type decodeState struct {
 	data       []byte
